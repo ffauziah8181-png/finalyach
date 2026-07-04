@@ -4,15 +4,18 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
+    use ApiResponse;
+
     public function show(Request $request)
     {
-        return new UserResource($request->user());
+        return $this->success('Berhasil mengambil profil.', new UserResource($request->user()));
     }
 
     public function update(Request $request)
@@ -23,7 +26,7 @@ class ProfileController extends Controller
             'name' => ['sometimes', 'string', 'max:255'],
             'email' => ['sometimes', 'email', Rule::unique('users', 'email')->ignore($user->id)],
             'no_hp' => ['sometimes', 'nullable', 'string', 'max:20'],
-            'avatar' => ['sometimes', 'image', 'max:4096'],
+            'avatar' => ['sometimes', 'image', 'mimes:jpg,jpeg,png', 'max:4096'],
         ]);
 
         if ($request->hasFile('avatar')) {
@@ -32,7 +35,7 @@ class ProfileController extends Controller
 
         $user->update($data);
 
-        return response()->json(['message' => 'Profil berhasil diperbarui.', 'data' => new UserResource($user)]);
+        return $this->success('Profil berhasil diperbarui.', new UserResource($user));
     }
 
     public function changePassword(Request $request)
@@ -45,12 +48,12 @@ class ProfileController extends Controller
         $user = $request->user();
 
         if (! Hash::check($request->password_lama, $user->password)) {
-            return response()->json(['message' => 'Password lama salah.'], 422);
+            return $this->error('Password lama salah.', null, 422);
         }
 
         $user->update(['password' => Hash::make($request->password_baru)]);
 
-        return response()->json(['message' => 'Password berhasil diubah.']);
+        return $this->success('Password berhasil diubah.');
     }
 
     public function changePin(Request $request)
@@ -59,6 +62,6 @@ class ProfileController extends Controller
 
         $request->user()->update(['pin' => Hash::make($request->pin)]);
 
-        return response()->json(['message' => 'PIN berhasil diperbarui.']);
+        return $this->success('PIN berhasil diperbarui.');
     }
 }

@@ -6,96 +6,67 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\TransactionRequest;
 use App\Http\Resources\TransactionResource;
 use App\Models\Transaction;
+use App\Services\TransactionService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
 class TransactionController extends Controller
 {
-    /**
-     * List transaksi milik user, mendukung filter tipe, kategori, rentang tanggal, dan pencarian catatan.
-     */
+    use ApiResponse;
+
+    public function __construct(protected TransactionService $transactionService) {}
+
     public function index(Request $request)
     {
-        $query = Transaction::with('category')
-            ->where('user_id', $request->user()->id);
+        $filters = $request->only(['tipe', 'category_id', 'dari', 'sampai', 'cari']);
 
-        if ($request->filled('tipe') && in_array($request->tipe, ['pengeluaran', 'pemasukan'])) {
-            $query->where('tipe', $request->tipe);
-        }
+        $transactions = $this->transactionService->listForUser(
+            $request->user()->id,
+            $filters,
+            (int) $request->get('per_page', 20)
+        );
 
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
-        }
-
-        if ($request->filled('dari')) {
-            $query->whereDate('tanggal', '>=', $request->dari);
-        }
-
-        if ($request->filled('sampai')) {
-            $query->whereDate('tanggal', '<=', $request->sampai);
-        }
-
-        if ($request->filled('cari')) {
-            $query->where('catatan', 'like', '%'.$request->cari.'%');
-        }
-
-        $transactions = $query->orderByDesc('tanggal')->orderByDesc('id')
-            ->paginate($request->get('per_page', 20));
-
-        return TransactionResource::collection($transactions);
+        return TransactionResource::collection($transactions)
+            ->additional(['success' => true, 'message' => 'Berhasil mengambil daftar transaksi.']);
     }
 
     public function store(TransactionRequest $request)
     {
-        $data = $request->validated();
-        $data['user_id'] = $request->user()->id;
+        $transaction = $this->transactionService->create(
+            $request->user()->id,
+            $request->validated(),
+            $request->file('bukti_transaksi')
+        );
 
-        if ($request->hasFile('bukti_transaksi')) {
-            $data['bukti_transaksi'] = $request->file('bukti_transaksi')->store('transaksi', 'public');
-        }
-
-        $transaction = Transaction::create($data);
-
-        return response()->json([
-            'message' => 'Transaksi berhasil disimpan.',
-            'data' => new TransactionResource($transaction->load('category')),
-        ], 201);
+        return $this->created('Transaksi berhasil disimpan.', new TransactionResource($transaction));
     }
 
     public function show(Request $request, Transaction $transaction)
     {
-        $this->pastikanMilikUser($request, $transaction);
+        $this->authorize('view', $transaction);
 
-        return new TransactionResource($transaction->load('category'));
+        return $this->success('Berhasil mengambil detail transaksi.', new TransactionResource($transaction->load('category')));
     }
 
     public function update(TransactionRequest $request, Transaction $transaction)
     {
-        $this->pastikanMilikUser($request, $transaction);
+        $this->authorize('update', $transaction);
 
-        $data = $request->validated();
+        $updated = $this->transactionService->update(
+            $transaction,
+            $request->validated(),
+            $request->file('bukti_transaksi')
+        );
 
-        if ($request->hasFile('bukti_transaksi')) {
-            $data['bukti_transaksi'] = $request->file('bukti_transaksi')->store('transaksi', 'public');
-        }
-
-        $transaction->update($data);
-
-        return response()->json([
-            'message' => 'Transaksi berhasil diperbarui.',
-            'data' => new TransactionResource($transaction->load('category')),
-        ]);
+        return $this->success('Transaksi berhasil diperbarui.', new TransactionResource($updated));
     }
 
     public function destroy(Request $request, Transaction $transaction)
     {
-        $this->pastikanMilikUser($request, $transaction);
-        $transaction->delete();
+        $this->authorize('delete', $transaction);
 
-        return response()->json(['message' => 'Transaksi berhasil dihapus.']);
-    }
+        $this->transactionService->delete($transaction);
 
-    private function pastikanMilikUser(Request $request, Transaction $transaction): void
-    {
-        abort_if($transaction->user_id !== $request->user()->id, 403, 'Tidak diizinkan.');
+        return $this->success('Transaksi berhasil dihapus.');
     }
 }

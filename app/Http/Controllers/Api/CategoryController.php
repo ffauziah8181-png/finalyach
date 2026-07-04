@@ -4,24 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Repositories\Contracts\CategoryRepositoryInterface;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    /**
-     * List kategori global + kategori custom milik user, opsional filter tipe.
-     */
+    use ApiResponse;
+
+    public function __construct(protected CategoryRepositoryInterface $categories) {}
+
     public function index(Request $request)
     {
-        $query = Category::where(function ($q) use ($request) {
-            $q->whereNull('user_id')->orWhere('user_id', $request->user()->id);
-        });
+        $categories = $this->categories->availableForUser($request->user()->id, $request->get('tipe'));
 
-        if ($request->filled('tipe')) {
-            $query->where('tipe', $request->tipe);
-        }
-
-        return response()->json($query->orderBy('nama')->get());
+        return $this->success('Berhasil mengambil daftar kategori.', $categories);
     }
 
     public function store(Request $request)
@@ -36,16 +33,17 @@ class CategoryController extends Controller
         $data['user_id'] = $request->user()->id;
         $data['is_default'] = false;
 
-        $category = Category::create($data);
+        $category = $this->categories->create($data);
 
-        return response()->json(['message' => 'Kategori berhasil ditambahkan.', 'data' => $category], 201);
+        return $this->created('Kategori berhasil ditambahkan.', $category);
     }
 
     public function destroy(Request $request, Category $category)
     {
-        abort_if($category->user_id !== $request->user()->id, 403, 'Tidak diizinkan menghapus kategori bawaan.');
-        $category->delete();
+        $this->authorize('delete', $category);
 
-        return response()->json(['message' => 'Kategori berhasil dihapus.']);
+        $this->categories->delete($category);
+
+        return $this->success('Kategori berhasil dihapus.');
     }
 }

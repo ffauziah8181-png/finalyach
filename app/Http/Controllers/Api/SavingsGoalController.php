@@ -6,73 +6,61 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SavingsGoalRequest;
 use App\Http\Resources\SavingsGoalResource;
 use App\Models\SavingsGoal;
-use App\Models\SavingsTransaction;
+use App\Services\SavingsGoalService;
+use App\Traits\ApiResponse;
+use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class SavingsGoalController extends Controller
 {
+    use ApiResponse;
+
+    public function __construct(protected SavingsGoalService $savingsGoalService) {}
+
     public function index(Request $request)
     {
-        $status = $request->get('status'); // berjalan | tercapai
+        $goals = $this->savingsGoalService->listForUser($request->user()->id, $request->get('status'));
 
-        $query = SavingsGoal::where('user_id', $request->user()->id);
-
-        if ($status) {
-            $query->where('status', $status);
-        }
-
-        return SavingsGoalResource::collection($query->orderByDesc('created_at')->get());
+        return $this->success('Berhasil mengambil daftar target tabungan.', SavingsGoalResource::collection($goals));
     }
 
     public function store(SavingsGoalRequest $request)
     {
-        $data = $request->validated();
-        $data['user_id'] = $request->user()->id;
+        $goal = $this->savingsGoalService->create(
+            $request->user()->id,
+            $request->validated(),
+            $request->file('foto_sampul')
+        );
 
-        if ($request->hasFile('foto_sampul')) {
-            $data['foto_sampul'] = $request->file('foto_sampul')->store('tabungan', 'public');
-        }
-
-        $goal = SavingsGoal::create($data);
-
-        return response()->json([
-            'message' => 'Target tabungan berhasil dibuat.',
-            'data' => new SavingsGoalResource($goal),
-        ], 201);
+        return $this->created('Target tabungan berhasil dibuat.', new SavingsGoalResource($goal));
     }
 
     public function show(Request $request, SavingsGoal $savingsGoal)
     {
-        $this->pastikanMilikUser($request, $savingsGoal);
+        $this->authorize('view', $savingsGoal);
 
-        return new SavingsGoalResource($savingsGoal->load(['riwayat' => fn ($q) => $q->orderByDesc('created_at')]));
+        return $this->success(
+            'Berhasil mengambil detail target tabungan.',
+            new SavingsGoalResource($savingsGoal->load(['riwayat' => fn ($q) => $q->orderByDesc('created_at')]))
+        );
     }
 
     public function update(SavingsGoalRequest $request, SavingsGoal $savingsGoal)
     {
-        $this->pastikanMilikUser($request, $savingsGoal);
+        $this->authorize('update', $savingsGoal);
 
-        $data = $request->validated();
+        $updated = $this->savingsGoalService->update(
+            $savingsGoal,
+            $request->validated(),
+            $request->file('foto_sampul')
+        );
 
-        if ($request->hasFile('foto_sampul')) {
-            $data['foto_sampul'] = $request->file('foto_sampul')->store('tabungan', 'public');
-        }
-
-        $savingsGoal->update($data);
-
-        return response()->json([
-            'message' => 'Target tabungan berhasil diperbarui.',
-            'data' => new SavingsGoalResource($savingsGoal),
-        ]);
+        return $this->success('Target tabungan berhasil diperbarui.', new SavingsGoalResource($updated));
     }
 
-    /**
-     * Tambah setoran/penarikan pada target tabungan (Riwayat Setoran).
-     */
     public function setoran(Request $request, SavingsGoal $savingsGoal)
     {
-        $this->pastikanMilikUser($request, $savingsGoal);
+        $this->authorize('update', $savingsGoal);
 
         $data = $request->validate([
             'tipe' => ['required', 'in:setoran,penarikan'],
@@ -80,38 +68,26 @@ class SavingsGoalController extends Controller
             'catatan' => ['nullable', 'string', 'max:255'],
         ]);
 
-        DB::transaction(function () use ($savingsGoal, $data) {
-            SavingsTransaction::create([
-                'savings_goal_id' => $savingsGoal->id,
-                'tipe' => $data['tipe'],
-                'jumlah' => $data['jumlah'],
-                'catatan' => $data['catatan'] ?? null,
-            ]);
+        try {
+            $goal = $this->savingsGoalService->catatSetoran(
+                $savingsGoal,
+                $data['tipe'],
+                (float) $data['jumlah'],
+                $data['catatan'] ?? null
+            );
 
-            $perubahan = $data['tipe'] === 'setoran' ? $data['jumlah'] : -$data['jumlah'];
-            $savingsGoal->increment('nominal_terkumpul', $perubahan);
-
-            if ($savingsGoal->nominal_terkumpul >= $savingsGoal->nominal_target) {
-                $savingsGoal->update(['status' => 'tercapai']);
-            }
-        });
-
-        return response()->json([
-            'message' => 'Berhasil dicatat.',
-            'data' => new SavingsGoalResource($savingsGoal->fresh(['riwayat'])),
-        ]);
+            return $this->success('Berhasil dicatat.', new SavingsGoalResource($goal));
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), null, $e->getCode() ?: 422);
+        }
     }
 
     public function destroy(Request $request, SavingsGoal $savingsGoal)
     {
-        $this->pastikanMilikUser($request, $savingsGoal);
-        $savingsGoal->delete();
+        $this->authorize('delete', $savingsGoal);
 
-        return response()->json(['message' => 'Target tabungan berhasil dihapus.']);
-    }
+        $this->savingsGoalService->delete($savingsGoal);
 
-    private function pastikanMilikUser(Request $request, SavingsGoal $savingsGoal): void
-    {
-        abort_if($savingsGoal->user_id !== $request->user()->id, 403, 'Tidak diizinkan.');
+        return $this->success('Target tabungan berhasil dihapus.');
     }
 }

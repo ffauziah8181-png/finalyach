@@ -13,11 +13,14 @@ use App\Http\Controllers\Api\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 // ==== Auth (publik) ====
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
-Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/login-pin', [AuthController::class, 'loginWithPin']);
+// Rate limit 5x/menit untuk mencegah brute-force pada endpoint sensitif
+Route::middleware('throttle:5,1')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login-pin', [AuthController::class, 'loginWithPin']);
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+    Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
+});
 
 // ==== Butuh login (Sanctum token) ====
 Route::middleware('auth:sanctum')->group(function () {

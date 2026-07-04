@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\UserNotification;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
+    use ApiResponse;
+
     public function index(Request $request)
     {
         $notifikasi = UserNotification::where('user_id', $request->user()->id)
@@ -18,29 +21,31 @@ class NotificationController extends Controller
                     : ($n->created_at->isCurrentWeek() ? 'Minggu Ini' : 'Lebih Lama');
             });
 
-        return response()->json($notifikasi);
+        return $this->success('Berhasil mengambil notifikasi.', $notifikasi);
     }
 
     public function markAsRead(Request $request, UserNotification $notification)
     {
-        abort_if($notification->user_id !== $request->user()->id, 403);
+        $this->authorize('update', $notification);
+
         $notification->update(['is_read' => true]);
 
-        return response()->json(['message' => 'Ditandai sudah dibaca.']);
+        return $this->success('Ditandai sudah dibaca.');
     }
 
     public function markAllAsRead(Request $request)
     {
         UserNotification::where('user_id', $request->user()->id)->update(['is_read' => true]);
 
-        return response()->json(['message' => 'Semua notifikasi ditandai sudah dibaca.']);
+        return $this->success('Semua notifikasi ditandai sudah dibaca.');
     }
 
     public function destroy(Request $request, UserNotification $notification)
     {
-        abort_if($notification->user_id !== $request->user()->id, 403);
+        $this->authorize('delete', $notification);
+
         $notification->delete();
 
-        return response()->json(['message' => 'Notifikasi dihapus.']);
+        return $this->success('Notifikasi dihapus.');
     }
 }

@@ -6,43 +6,27 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
-use App\Models\User;
-use App\Models\UserSetting;
+use App\Services\AuthService;
+use App\Traits\ApiResponse;
+use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
-    /**
-     * Daftar akun baru + kirim kode OTP verifikasi.
-     */
+    use ApiResponse;
+
+    public function __construct(protected AuthService $authService) {}
+
     public function register(RegisterRequest $request)
     {
-        $data = $request->validated();
+        $user = $this->authService->register($request->validated());
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'no_ktp' => $data['no_ktp'] ?? null,
-            'no_hp' => $data['no_hp'] ?? null,
-            'password' => Hash::make($data['password']),
-        ]);
-
-        UserSetting::create(['user_id' => $user->id]);
-
-        $this->kirimOtp($user);
-
-        return response()->json([
-            'message' => 'Registrasi berhasil. Kode verifikasi telah dikirim ke email Anda.',
-            'user' => new UserResource($user),
-        ], 201);
+        return $this->created(
+            'Registrasi berhasil. Kode verifikasi telah dikirim ke email Anda.',
+            ['user' => new UserResource($user)]
+        );
     }
 
-    /**
-     * Verifikasi akun menggunakan kode OTP 6 digit.
-     */
     public function verifyOtp(Request $request)
     {
         $request->validate([
@@ -50,73 +34,45 @@ class AuthController extends Controller
             'otp' => ['required', 'digits:6'],
         ]);
 
-        $user = User::where('email', $request->email)->firstOrFail();
+        try {
+            $result = $this->authService->verifyOtp($request->email, $request->otp);
 
-        if (! $user->otp_code || $user->otp_code !== $request->otp) {
-            return response()->json(['message' => 'Kode verifikasi salah.'], 422);
+            return $this->success('Verifikasi berhasil.', [
+                'token' => $result['token'],
+                'user' => new UserResource($result['user']),
+            ]);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), null, $e->getCode() ?: 422);
         }
-
-        if (now()->greaterThan($user->otp_expires_at)) {
-            return response()->json(['message' => 'Kode verifikasi telah kedaluwarsa. Silakan minta kode baru.'], 422);
-        }
-
-        $user->update([
-            'email_verified_at' => now(),
-            'otp_code' => null,
-            'otp_expires_at' => null,
-        ]);
-
-        $token = $user->createToken('mobile')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Verifikasi berhasil.',
-            'token' => $token,
-            'user' => new UserResource($user),
-        ]);
     }
 
-    /**
-     * Kirim ulang kode OTP (jika kedaluwarsa/belum masuk).
-     */
     public function resendOtp(Request $request)
     {
         $request->validate(['email' => ['required', 'email']]);
 
-        $user = User::where('email', $request->email)->firstOrFail();
+        try {
+            $this->authService->resendOtp($request->email);
 
-        if ($user->email_verified_at) {
-            return response()->json(['message' => 'Akun sudah terverifikasi.'], 422);
+            return $this->success('Kode verifikasi baru telah dikirim.');
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), null, $e->getCode() ?: 422);
         }
-
-        $this->kirimOtp($user);
-
-        return response()->json(['message' => 'Kode verifikasi baru telah dikirim.']);
     }
 
     public function login(LoginRequest $request)
     {
-        $user = User::where('email', $request->email)->first();
+        try {
+            $result = $this->authService->login($request->email, $request->password);
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Email atau password salah.'], 401);
+            return $this->success('Login berhasil.', [
+                'token' => $result['token'],
+                'user' => new UserResource($result['user']),
+            ]);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), null, $e->getCode() ?: 401);
         }
-
-        if (! $user->email_verified_at) {
-            return response()->json(['message' => 'Akun belum diverifikasi. Silakan cek email Anda.'], 403);
-        }
-
-        $token = $user->createToken('mobile')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Login berhasil.',
-            'token' => $token,
-            'user' => new UserResource($user),
-        ]);
     }
 
-    /**
-     * Login cepat menggunakan PIN (setelah pernah login normal & set PIN).
-     */
     public function loginWithPin(Request $request)
     {
         $request->validate([
@@ -124,49 +80,27 @@ class AuthController extends Controller
             'pin' => ['required', 'digits:6'],
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        try {
+            $result = $this->authService->loginWithPin($request->email, $request->pin);
 
-        if (! $user || ! $user->pin || ! Hash::check($request->pin, $user->pin)) {
-            return response()->json(['message' => 'PIN salah.'], 401);
+            return $this->success('Login berhasil.', [
+                'token' => $result['token'],
+                'user' => new UserResource($result['user']),
+            ]);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), null, $e->getCode() ?: 401);
         }
-
-        $token = $user->createToken('mobile')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Login berhasil.',
-            'token' => $token,
-            'user' => new UserResource($user),
-        ]);
     }
 
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Berhasil keluar.']);
+        return $this->success('Berhasil keluar.');
     }
 
     public function me(Request $request)
     {
-        return new UserResource($request->user());
-    }
-
-    private function kirimOtp(User $user): void
-    {
-        $otp = (string) random_int(100000, 999999);
-
-        $user->update([
-            'otp_code' => $otp,
-            'otp_expires_at' => now()->addMinutes(10),
-        ]);
-
-        // Kirim email OTP. Buat App\Mail\OtpVerificationMail sesuai kebutuhan.
-        try {
-            Mail::raw("Kode verifikasi Keuanganku Anda: {$otp} (berlaku 10 menit)", function ($message) use ($user) {
-                $message->to($user->email)->subject('Kode Verifikasi Akun Keuanganku');
-            });
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        return $this->success('Berhasil mengambil data user.', new UserResource($request->user()));
     }
 }

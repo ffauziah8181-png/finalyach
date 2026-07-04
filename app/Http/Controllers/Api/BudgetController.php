@@ -4,30 +4,24 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Budget;
+use App\Services\BudgetService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
 class BudgetController extends Controller
 {
+    use ApiResponse;
+
+    public function __construct(protected BudgetService $budgetService) {}
+
     public function index(Request $request)
     {
-        $bulan = $request->get('bulan', now()->month);
-        $tahun = $request->get('tahun', now()->year);
+        $bulan = (int) $request->get('bulan', now()->month);
+        $tahun = (int) $request->get('tahun', now()->year);
 
-        $budgets = Budget::with('category')
-            ->where('user_id', $request->user()->id)
-            ->where('bulan', $bulan)
-            ->where('tahun', $tahun)
-            ->get()
-            ->map(fn ($b) => [
-                'id' => $b->id,
-                'kategori' => $b->category->nama,
-                'icon' => $b->category->icon,
-                'jumlah_budget' => (float) $b->jumlah_budget,
-                'terpakai' => $b->terpakai,
-                'sisa' => (float) $b->jumlah_budget - $b->terpakai,
-            ]);
+        $budgets = $this->budgetService->listForPeriod($request->user()->id, $bulan, $tahun);
 
-        return response()->json($budgets);
+        return $this->success('Berhasil mengambil daftar anggaran.', $budgets);
     }
 
     public function store(Request $request)
@@ -38,21 +32,24 @@ class BudgetController extends Controller
             'bulan' => ['required', 'integer', 'between:1,12'],
             'tahun' => ['required', 'integer', 'min:2020'],
         ]);
-        $data['user_id'] = $request->user()->id;
 
-        $budget = Budget::updateOrCreate(
-            ['user_id' => $data['user_id'], 'category_id' => $data['category_id'], 'bulan' => $data['bulan'], 'tahun' => $data['tahun']],
-            ['jumlah_budget' => $data['jumlah_budget']]
+        $budget = $this->budgetService->setBudget(
+            $request->user()->id,
+            $data['category_id'],
+            (float) $data['jumlah_budget'],
+            $data['bulan'],
+            $data['tahun']
         );
 
-        return response()->json(['message' => 'Anggaran berhasil disimpan.', 'data' => $budget], 201);
+        return $this->created('Anggaran berhasil disimpan.', $budget);
     }
 
     public function destroy(Request $request, Budget $budget)
     {
-        abort_if($budget->user_id !== $request->user()->id, 403, 'Tidak diizinkan.');
-        $budget->delete();
+        $this->authorize('delete', $budget);
 
-        return response()->json(['message' => 'Anggaran berhasil dihapus.']);
+        $this->budgetService->delete($budget);
+
+        return $this->success('Anggaran berhasil dihapus.');
     }
 }

@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
 class SettingController extends Controller
 {
+    use ApiResponse;
+
     public function show(Request $request)
     {
-        return response()->json($request->user()->setting);
+        return $this->success('Berhasil mengambil pengaturan.', $request->user()->setting);
     }
 
     public function update(Request $request)
@@ -30,6 +33,6 @@ class SettingController extends Controller
             $request->user()->update(['biometric_enabled' => $data['login_biometrik']]);
         }
 
-        return response()->json(['message' => 'Pengaturan berhasil disimpan.', 'data' => $setting]);
+        return $this->success('Pengaturan berhasil disimpan.', $setting);
     }
 }
