@@ -1,0 +1,9 @@
+$kind: http-request
+name: logout
+url: http://127.0.0.1:8000/api/logout
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: 12|MAKETR7aUrTpLVPZsa5kEXjRsXFteoFwVdLCpcrhb785301b
+order: 3714383278592198

@@ -1,0 +1,9 @@
+$kind: http-request
+name: list budget
+url: http://127.0.0.1:8000/api/budgets
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: ""
+order: 4267203237113203

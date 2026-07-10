@@ -1,0 +1,12 @@
+$kind: http-request
+name: kategori
+url: http://127.0.0.1:8000/api/categories
+method: GET
+body:
+  type: json
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{auth_secret_0be0}}"
+order: 2928509346865531

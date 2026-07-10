@@ -1,0 +1,13 @@
+$kind: http-request
+url: http://127.0.0.1:8000/api/transactions?category_id=1&tipe=pengeluaran&jumlah=45000&tanggal=2026-07-10
+method: POST
+queryParams:
+  category_id: "1"
+  tipe: pengeluaran
+  jumlah: "45000"
+  tanggal: 2026-07-10
+auth:
+  type: bearer
+  credentials:
+    token: "{{auth_secret_0be0}}"
+order: 2694254856427398

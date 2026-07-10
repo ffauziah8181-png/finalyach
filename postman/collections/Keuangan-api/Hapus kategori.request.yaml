@@ -1,0 +1,9 @@
+$kind: http-request
+name: Hapus kategori
+url: http://127.0.0.1:8000/api/categories/1
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: 12|MAKETR7aUrTpLVPZsa5kEXjRsXFteoFwVdLCpcrhb785301b
+order: 4123534775681099

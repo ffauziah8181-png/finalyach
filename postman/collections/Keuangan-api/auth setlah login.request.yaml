@@ -1,0 +1,9 @@
+$kind: http-request
+name: auth setlah login
+url: http://127.0.0.1:8000/api/me
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: 12|MAKETR7aUrTpLVPZsa5kEXjRsXFteoFwVdLCpcrhb785301b
+order: 3329677822004861

@@ -1,0 +1,9 @@
+$kind: http-request
+url: http://127.0.0.1:8000/api/register?name=fauziah&email=fauziah@gmail.com&password=pw123456&password_confirmation=pw123456
+method: POST
+queryParams:
+  name: fauziah
+  email: fauziah@gmail.com
+  password: pw123456
+  password_confirmation: pw123456
+order: 1783657393596
