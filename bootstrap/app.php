@@ -16,9 +16,14 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware) {
+        ->withMiddleware(function (Middleware $middleware) {
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        ]);
+
+        // Tambahan: Lewatkan pengecekan CSRF khusus untuk semua endpoint API mobile
+        $middleware->validateCsrfTokens(except: [
+            'api/*'
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -1,0 +1,24 @@
+$kind: http-request
+name: hapus transaksi
+url: http://127.0.0.1:8000/api/transactions/1
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \  \"category_id\": 1,\r
+
+    \  \"tipe\": \"pengeluaran\",\r
+
+    \  \"jumlah\": 75000,\r
+
+    \  \"catatan\": \"Makan malam\",\r
+
+    \  \"tanggal\": \"2026-07-10\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 13|eiLHVPxmOTFcC1thXAHEEhz415AFcPeYi4FLpZ4p6c739482
+order: 4502376174025499

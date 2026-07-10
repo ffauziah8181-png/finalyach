@@ -1,0 +1,18 @@
+$kind: http-request
+name: update setting
+url: http://127.0.0.1:8000/api/settings
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \  \"notifikasi_aktif\": true,\r
+
+    \  \"tema\": \"dark\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 13|eiLHVPxmOTFcC1thXAHEEhz415AFcPeYi4FLpZ4p6c739482
+order: 4501649869996642

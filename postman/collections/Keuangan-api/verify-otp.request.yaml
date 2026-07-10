@@ -1,0 +1,14 @@
+$kind: http-request
+name: verify-otp
+url: http://127.0.0.1:8000/api/verify-otp?email=fauziah@gmail.com&otp=770933
+method: POST
+queryParams:
+  - key: email
+    value: fauziah@gmail.com
+    disabled: false
+    description: ""
+  - key: otp
+    value: "770933"
+    disabled: false
+    description: ""
+order: 956746653608438

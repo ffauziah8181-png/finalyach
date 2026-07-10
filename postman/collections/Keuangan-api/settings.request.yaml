@@ -1,0 +1,8 @@
+$kind: http-request
+url: http://127.0.0.1:8000/api/settings
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: 13|eiLHVPxmOTFcC1thXAHEEhz415AFcPeYi4FLpZ4p6c739482
+order: 4496108818384510

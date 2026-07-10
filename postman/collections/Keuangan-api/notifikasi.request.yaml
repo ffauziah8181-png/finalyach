@@ -1,0 +1,9 @@
+$kind: http-request
+name: notifikasi
+url: http://127.0.0.1:8000/api/notifications
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: 12|MAKETR7aUrTpLVPZsa5kEXjRsXFteoFwVdLCpcrhb785301b
+order: 4478828730504021

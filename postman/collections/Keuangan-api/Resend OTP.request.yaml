@@ -1,0 +1,9 @@
+$kind: http-request
+name: Resend OTP
+url: http://127.0.0.1:8000/api/resend-otp
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: 12|MAKETR7aUrTpLVPZsa5kEXjRsXFteoFwVdLCpcrhb785301b
+order: 4422625161495348

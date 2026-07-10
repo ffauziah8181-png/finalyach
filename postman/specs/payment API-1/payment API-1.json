@@ -1,0 +1,355 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "payment API",
+    "version": "1.0.0",
+    "description": ""
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8000"
+    }
+  ],
+  "paths": {
+    "/api/register": {
+      "post": {
+        "summary": "registrasi",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "fauziah"
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "fauziah@gmail.com"
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "pw123456"
+          },
+          {
+            "name": "password_confirmation",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "pw123456"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/verify-otp": {
+      "post": {
+        "summary": "verify-otp",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "fauziah@gmail.com"
+          },
+          {
+            "name": "otp",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 770933
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/transactions": {
+      "post": {
+        "summary": "tambah transaksi",
+        "parameters": [
+          {
+            "name": "category_id",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          },
+          {
+            "name": "tipe",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "pengeluaran"
+          },
+          {
+            "name": "jumlah",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 45000
+          },
+          {
+            "name": "tanggal",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-07-10"
+          }
+        ],
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/categories": {
+      "get": {
+        "summary": "kategori",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "summary": "auth setlah login",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/logout": {
+      "post": {
+        "summary": "logout",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/categories/1": {
+      "delete": {
+        "summary": "Hapus kategori",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/budgets": {
+      "get": {
+        "summary": "list budget",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/resend-otp": {
+      "post": {
+        "summary": "Resend OTP",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "summary": "notifikasi",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/login": {
+      "post": {
+        "summary": "login",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "email": "fauziah@gmail.com",
+                "password": "pw123456"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "summary": "settings",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "update setting",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "notifikasi_aktif": {
+                    "type": "boolean"
+                  },
+                  "tema": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "notifikasi_aktif": true,
+                "tema": "dark"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transactions/1": {
+      "get": {
+        "summary": "transaksi",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "hapus transaksi",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category_id": {
+                    "type": "integer"
+                  },
+                  "tipe": {
+                    "type": "string"
+                  },
+                  "jumlah": {
+                    "type": "integer"
+                  },
+                  "catatan": {
+                    "type": "string"
+                  },
+                  "tanggal": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              },
+              "example": {
+                "category_id": 1,
+                "tipe": "pengeluaran",
+                "jumlah": 75000,
+                "catatan": "Makan malam",
+                "tanggal": "2026-07-10"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "hapus transaksi",
+        "responses": {},
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+$kind: http-request
+name: login
+url: http://127.0.0.1:8000/api/login
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"email\": \"fauziah@gmail.com\",\r
+
+    \  \"password\": \"pw123456\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 12|MAKETR7aUrTpLVPZsa5kEXjRsXFteoFwVdLCpcrhb785301b
+order: 4485533951886431

@@ -1,0 +1,9 @@
+$kind: http-request
+name: hapus transaksi
+url: http://127.0.0.1:8000/api/transactions/1
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: 13|eiLHVPxmOTFcC1thXAHEEhz415AFcPeYi4FLpZ4p6c739482
+order: 4503021472396337

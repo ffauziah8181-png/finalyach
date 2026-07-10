@@ -94,9 +94,11 @@ class AuthService
             throw new Exception('Email atau password salah.', 401);
         }
 
-        if (! $user->email_verified_at) {
-            throw new Exception('Akun belum diverifikasi. Silakan cek email Anda.', 403);
-        }
+        // Sementara nonaktifkan validasi verifikasi email agar login bisa langsung lewat.
+        // Hapus komentar ini kembali setelah akun sudah siap diverifikasi.
+        // if (! $user->email_verified_at) {
+        //     throw new Exception('Akun belum diverifikasi. Silakan cek email Anda.', 403);
+        // }
 
         $token = $user->createToken('mobile')->plainTextToken;
 

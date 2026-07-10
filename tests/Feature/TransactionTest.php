@@ -33,6 +33,28 @@ class TransactionTest extends TestCase
         ]);
     }
 
+    public function test_transaksi_dapat_dibuat_dengan_alias_field_flutter(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create(['tipe' => 'pengeluaran']);
+
+        $response = $this->actingAs($user)->postJson('/api/transactions', [
+            'categoryId' => $category->id,
+            'type' => 'pengeluaran',
+            'amount' => 45000,
+            'note' => 'Makan siang',
+            'date' => now()->toDateString(),
+        ]);
+
+        $response->assertStatus(201)->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('transactions', [
+            'user_id' => $user->id,
+            'jumlah' => 45000,
+            'catatan' => 'Makan siang',
+        ]);
+    }
+
     public function test_transaksi_gagal_dibuat_tanpa_field_wajib(): void
     {
         $user = User::factory()->create();
